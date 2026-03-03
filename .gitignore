@@ -1,0 +1,6 @@
+# the autosave files that MATLAB kindly generates
+*.asv
+
+# the results from the simulation
+output_images/
+analysis_results.csv
