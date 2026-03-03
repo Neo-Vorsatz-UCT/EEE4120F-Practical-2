@@ -2,19 +2,28 @@
 % Practical 2: Mandelbrot-Set Serial vs Parallel Analysis
 % =========================================================================
 %
-% GROUP NUMBER:
+% GROUP NUMBER: 8
 %
 % MEMBERS:
-%   - Member 1 Name, Student Number
-%   - Member 2 Name, Student Number
+%   - Shaun Beautement, BTMSHA001
+%   - Neo Vorsatz, VRSNEO001
+
+clear;
+
+global output_dir;
+global output_file;
+output_dir = "output_images";
+output_file = "analysis_results.csv";
 
 %% ========================================================================
 %  PART 1: Mandelbrot Set Image Plotting and Saving
 %  ========================================================================
 %
 % TODO: Implement Mandelbrot set plotting and saving function
-function mandelbrot_plot(varargin) %Add necessary input arguments
-    
+function mandelbrot_plot(plot) %Add necessary input arguments
+    [rows, cols] = size(plot);
+    imwrite(normalized_manual, strcat(output_dir,"/mandelbrot_", ...
+        int2str(rows),"x",int2str(cols)));
 end
 
 %% ========================================================================
@@ -25,6 +34,12 @@ end
 function mandelbrot_serial(varargin) %Add necessary input arguments 
     
 end
+% Neo's recommended function header:
+% function plot = mandelbrot_parallel(width, height, max_iterations)
+% "plot" is a matrix of the coordinates, where 1 means "in the set", and 0
+% means otherwise.
+% the "width" and "height" count pixels
+% "max_iterations" is self-explanatory
 
 %% ========================================================================
 %  PART 3: Parallel Mandelbrot Set Computation
@@ -34,6 +49,12 @@ end
 function mandelbrot_parallel(varargin) %Add necessary input arguments 
     
 end
+% Neo's recommended function header:
+% function plot = mandelbrot_parallel(width, height, max_iterations)
+% "plot" is a matrix of the coordinates, where 1 means "in the set", and 0
+% means otherwise.
+% the "width" and "height" count pixels
+% "max_iterations" is self-explanatory
 
 %% ========================================================================
 %  PART 4: Testing and Analysis
@@ -41,7 +62,7 @@ end
 % Compare the performance of serial Mandelbrot set computation
 % with parallel Mandelbrot set computation.
 
-function run_analysis()
+function run_analysis_()
     %Array conatining all the image sizes to be tested
     image_sizes = [
         [800,600],   %SVGA
