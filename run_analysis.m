@@ -91,7 +91,7 @@ end
 % Compare the performance of serial Mandelbrot set computation
 % with parallel Mandelbrot set computation.
 
-function run_analysis_()
+function run_analysis_() %[!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!]
     %Array conatining all the image sizes to be tested
     image_sizes = [
         [800,600],   %SVGA
@@ -111,103 +111,125 @@ function run_analysis_()
     global parallel_images_dir; %directory where the parallel images are saved
     global output_file; %file with all of the output data
     %constants
-    ITERATIONS_AVG = 19; %number of iterations used to determine an average
+    ITERATIONS_AVG = 10; %number of iterations used to determine an average
     CORE_COUNTS = [2,4]; %array of the numbers of cores used in parallel processing
     %variables for data
     numImages = length(image_sizes); %number of images to generate
-    total_pixels = zeros(numImages,1); %total number of pixels in each image
+    widths = zeros(numImages,1); %widths of the images
+    heights = zeros(numImages,1); %widths of the images
+    plots_serial = cell(numImages,1); %all of the plots generated serially
     time_serial = zeros(numImages,1); %times taken to generate images with serial processing
-    time_parallel = zeros(numImages,length(CORE_COUNTS)); %times taken to generate images with parallel processing
-    speedup = zeros(numImages,length(CORE_COUNTS)); %speedup for each image, and each number of cores
-    diff_pixels = zeros(numImages,1); %number of pixels that vary between the two
+    time_parallel = zeros(length(CORE_COUNTS),numImages); %times taken to generate images with parallel processing
+    speedup = zeros(length(CORE_COUNTS),numImages); %speedup for each image, and each number of cores
+    diff_pixels = zeros(length(CORE_COUNTS),numImages); %number of pixels that vary between the two
+    %generate information about images
+    total_pixels = zeros(numImages,1); %total number of pixels in each image
     labels = cell(numImages,1); %strings of the different sizes, such as '800x600'
-    % create output directories if they don't exist
+    for i = 1:numImages
+        widths(i,1) = image_sizes(i,1); %width of the image
+        heights(i,1) = image_sizes(i,2); %height of the image
+        total_pixels(i,1) = widths(i,1)*heights(i,1); %total pixels in the image
+        labels{i,1} = strcat(int2str(widths(i,1)),"x",int2str(heights(i,1))); %create the label for the size
+    end
+    %create output directories if they don't exist
     if ~exist(serial_images_dir, "dir")
         mkdir(serial_images_dir);
     end
     if ~exist(parallel_images_dir, "dir")
         mkdir(parallel_images_dir);
     end
-    % open file to save data
-    fileID = fopen(output_file, "w");
-    fprintf(fileID, "Image Size, Different Pixels, Serial Time (s)");
-    for cores = 1:length(CORE_COUNTS)
-        fprintf(fileID, ", Parallel Time [%d] (s), Speedup [%d]", ...
-            CORE_COUNTS(cores), CORE_COUNTS(cores));
-    end
-    fprintf(fileID, "\n");
-    
-    %TODO: For each image size, perform the following:
-    for i = 1:length(image_sizes)
-        width = image_sizes(i,1); %width of the image
-        height = image_sizes(i,2); %height of the image
-        total_pixels(i) = width*height; %total pixels in the image
-    %   a. Measure execution time of mandelbrot_serial
-        time_serial_iter = zeros(ITERATIONS_AVG,1); %all execution times, which will be averaged
+    %feedback
+    disp("... completed initialisation");
+
+    %determine time for serial implementation
+    time_serial_iter = zeros(numImages, ITERATIONS_AVG); %all execution times, which will be averaged
+    for i = 1:numImages
         for j = 1:ITERATIONS_AVG
             tic();
-            plot_serial = mandelbrot_serial(width, height, max_iterations);
-            time_serial_iter(j) = toc();
+            plots_serial{i,1} = mandelbrot_serial(widths(i,1), heights(i,1), max_iterations);
+            time_serial_iter(i,j) = toc();
         end
-        time_serial(i) = mean2(time_serial_iter); %determine average execution time
+        time_serial(i,1) = mean(time_serial_iter(i,:)); %determine average execution time
+        %save serial plot as image
+        filepath = strcat(serial_images_dir,"/serial_",labels{i,1},".png"); %generate serial filepath
+        mandelbrot_plot(plots_serial{i,1}, filepath); %save serial image
+        %feedback
+        disp(strcat("... completed serial testing for size ", labels{i,1}));
+    end
+    %feedback
+    disp("... completed serial testing");
 
-    %   b. Measure execution time of mandelbrot_parallel
-        for cores = 1:length(CORE_COUNTS)
-            %create a parallel pool
-            poolobj = gcp("nocreate");
-            if isempty(poolobj)
-                parpool("local", CORE_COUNTS(cores));
-            end
-            %measure time
+    %determine time for parallel implementation
+    for cores = 1:length(CORE_COUNTS) %for each number of cores
+        %create a parallel pool
+        poolobj = gcp("nocreate");
+        if isempty(poolobj)
+            parpool("local", CORE_COUNTS(cores));
+        end
+        %measure time
+        for i = 1:numImages
             time_parallel_iter = zeros(ITERATIONS_AVG,1);
             for j = 1:ITERATIONS_AVG
                 tic();
-                plot_parallel = mandelbrot_parallel(width, height, max_iterations);
-                time_parallel_iter(j) = toc();
+                plot_parallel = mandelbrot_parallel(widths(i,1), heights(i,1), max_iterations);
+                time_parallel_iter(j,1) = toc();
             end
-            time_parallel(i, cores) = mean2(time_parallel_iter); %determine average execution time
-            %delete the pool
-            delete(gcp("nocreate"));
-            %calculate speedup
-            speedup(i, cores) = mean2(time_serial_iter./time_parallel_iter); %calculate average speedup
+            time_parallel(cores,i) = mean2(time_parallel_iter(:,1)); %determine average execution time
+            %calculate results
+            speedup(cores,i) = mean2(time_serial_iter(i,:)./time_parallel_iter(:,1)); %calculate average speedup
+            diff_pixels(cores,i) = sum(xor(plots_serial{i,1}, plot_parallel), 'all'); %calculate error (number of different pixels)
+            %save parallel plot as image
+            filepath = strcat(parallel_images_dir, "/parallel_", labels{i},"_",int2str(CORE_COUNTS(cores)),".png"); %generate parallel filepath
+            mandelbrot_plot(plot_parallel, filepath); %save parallel image
+            %feedback
+            disp(strcat("... completed parallel testing for ",int2str(CORE_COUNTS(cores))," cores, size ",labels{i,1}));
         end
+        %delete the pool
+        delete(gcp("nocreate"));
+        %feedback
+        disp(strcat("... completed parallel testing for ",int2str(CORE_COUNTS(cores))," cores"));
+    end
 
-    %   c. Store results (image size, time_serial, time_parallel, speedup)
-        diff_pixels(i) = sum(xor(plot_serial, plot_parallel), 'all'); %calculate error (number of different pixels)
-        labels{i} = strcat(int2str(width),"x",int2str(height)); %create the label for the size
-        %record data in the CSV file
-        fprintf(fileID, "%s, %e, %.4f", ...
-            labels{i}, diff_pixels(i), time_serial(i), time_parallel(i), speedup(i));
+    %open file to save data
+    fileID = fopen(output_file, "w");
+    fprintf(fileID, "Image Size, Serial Time (s)");
+    for cores = 1:length(CORE_COUNTS)
+        fprintf(fileID, ", Different Pixels [%d], Parallel Time [%d] (s), Speedup [%d]", ...
+            CORE_COUNTS(cores), CORE_COUNTS(cores), CORE_COUNTS(cores));
+    end
+    fprintf(fileID, "\n");
+    %saving data to file
+    for i = 1:numImages
+        fprintf(fileID, "%s, %.5f", ...
+            labels{i,1}, time_serial(i,1));
         for cores = 1:length(CORE_COUNTS)
-            fprintf(fileID, ", %.6f, %.2f", ...
-                time_parallel(i,cores), speedup(i,cores));
+            fprintf(fileID, ", %e, %.5f, %.5f", ...
+                diff_pixels(cores,i), time_parallel(cores,i), speedup(cores,i));
         end
         fprintf(fileID, "\n");
-
-    %   d. Plot and save the Mandelbrot set images generated by both methods
-        filepath = strcat(serial_images_dir,"/serial_",labels{i},".png"); %generate serial filepath
-        mandelbrot_plot(plot_serial, filepath); %save serial image
-        filepath = strcat(parallel_images_dir, "/parallel_", labels{i},".png"); %generate parallel filepath
-        mandelbrot_plot(plot_parallel, filepath); %save parallel image
     end
-
-    % close file
+    %close file
     fclose(fileID);
+    %feedback
+    disp("... saved data to file");
 
-    % plotting speedup versus image size
+    %plotting speedup versus image size
     for cores = 1:length(CORE_COUNTS)
         figure;
-        plot(total_pixels, speedup(:,cores), '-o', 'LineWidth', 2, 'MarkerSize', 8);
-        set(gca, 'XScale', 'log');
-        % axis labels and title
-        xlabel('Image Dimensions (Total Pixels)');
-        ylabel('Speedup Ratio');
-        title('Mandelbrot Speedup vs. Image Size');
+        plot(total_pixels(:,1), speedup(cores,:), '-o', "LineWidth", 2, "MarkerSize", 8);
+        set(gca, "XScale", "log");
+        %axis labels and title
+        xlabel("Image Dimensions (Total Pixels)");
+        ylabel("Speedup Ratio");
+        title(strcat("Mandelbrot Speedup vs. Image Size for ", int2str(CORE_COUNTS(cores)), " cores"));
         grid on;
-        % apply image-labels to x-axis
+        %apply image-labels to x-axis
         xticks(total_pixels);
         xticklabels(labels);
+        xtickangle(90);
     end
+    %feedback
+    disp("... plotted data");
 end
 
 %run the analysis

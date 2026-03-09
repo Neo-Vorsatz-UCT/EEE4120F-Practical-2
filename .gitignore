@@ -5,3 +5,6 @@
 serial_output_images/
 parallel_output_images/
 analysis_results.csv
+
+# file where old implementations are dumped
+archive.m
