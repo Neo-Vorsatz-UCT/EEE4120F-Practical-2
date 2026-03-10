@@ -28,6 +28,19 @@ function mandelbrot_plot(plot, filepath)
 end
 
 %% ========================================================================
+%  PART 2: Serial Mandelbrot Set Computation
+%  ========================================================================`
+%
+% Defined in mandelbrot_sequential.m
+
+
+%% ========================================================================
+%  PART 3: Parallel Mandelbrot Set Computation
+%  ========================================================================
+%
+% Defined in mandelbrot_parallel.m
+
+%% ========================================================================
 %  PART 4: Testing and Analysis
 %  ========================================================================
 % Compare the performance of serial Mandelbrot set computation
@@ -54,7 +67,7 @@ function run_analysis_() %[!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!]
     global output_file; %file with all of the output data
     %constants
     ITERATIONS_AVG = 10; %number of iterations used to determine an average
-    CORE_COUNTS = [2,4]; %array of the numbers of cores used in parallel processing
+    CORE_COUNTS = [2,3,4,5,6]; %array of the numbers of cores used in parallel processing
     CMAP = colour_map(max_iterations,5); %generate colour-map
     %variables for data
     numImages = length(image_sizes); %number of images to generate
