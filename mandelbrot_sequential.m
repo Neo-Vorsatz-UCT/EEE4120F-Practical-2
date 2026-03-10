@@ -1,3 +1,18 @@
+% =========================================================================
+% Practical 2: Mandelbrot-Set Serial vs Parallel Analysis
+% =========================================================================
+%
+% GROUP NUMBER: 8
+%
+% MEMBERS:
+%   - Shaun Beautement, BTMSHA001
+%   - Neo Vorsatz, VRSNEO001
+
+%% ========================================================================
+%  PART 2: Serial Mandelbrot Set Computation
+%  ========================================================================`
+%
+%TODO: Implement serial Mandelbrot set computation function
 function img = mandelbrot_sequential(cols, rows, max_iterations, cmap)
     % The area of the complex plane to calculate for.
     x_min = -2.0;

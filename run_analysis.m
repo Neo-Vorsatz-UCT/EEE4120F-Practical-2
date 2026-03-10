@@ -23,66 +23,8 @@ output_file = "analysis_results.csv";
 %
 % TODO: Implement Mandelbrot set plotting and saving function
 function mandelbrot_plot(plot, filepath)
-    %save the plot (matrix of 1s and 0s) to the given filepath
+    %save the plot (RGB matrices) to the given filepath
     imwrite(plot, filepath);
-end
-
-%% ========================================================================
-%  PART 2: Serial Mandelbrot Set Computation
-%  ========================================================================`
-%
-%TODO: Implement serial Mandelbrot set computation function
-% function mandelbrot_serial(varargin) %Add necessary input arguments 
-% 
-% end
-
-% Neo's recommended function header:
-% function plot = mandelbrot_parallel(width, height, max_iterations)
-% "plot" is a matrix of the coordinates, where 1 means "in the set", and 0
-% means otherwise (please use integers).
-% the "width" and "height" count pixels
-% "max_iterations" is self-explanatory
-function plot = mandelbrot_serial(width, height, max_iterations) %test function
-    plot = zeros(height,width);
-    for i = 1:height
-        for j = 1:width
-            if i==j
-                if mod(i,32)>=16 & mod(j,32)>=16
-                    plot(i,j) = 1;
-                end
-            else
-                if mod(i,32)<16 & mod(j,32)<16
-                    plot(i,j) = 1;
-                end
-            end
-        end
-    end
-end
-
-%% ========================================================================
-%  PART 3: Parallel Mandelbrot Set Computation
-%  ========================================================================
-%
-%TODO: Implement parallel Mandelbrot set computation function
-% function mandelbrot_parallel(varargin) %Add necessary input arguments 
-% 
-% end
-
-% Neo's recommended function header:
-% function plot = mandelbrot_parallel(width, height, max_iterations)
-% "plot" is a matrix of the coordinates, where 1 means "in the set", and 0
-% means otherwise (please use integers).
-% the "width" and "height" count pixels
-% "max_iterations" is self-explanatory
-function plot = mandelbrot_parallel(width, height, max_iterations) %test function
-    plot = zeros(height,width);
-    for i = 1:height
-        for j = 1:width
-            if mod(i,32)<16 & mod(j,32)<16
-                plot(i,j) = 1;
-            end
-        end
-    end
 end
 
 %% ========================================================================
@@ -113,6 +55,7 @@ function run_analysis_() %[!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!]
     %constants
     ITERATIONS_AVG = 10; %number of iterations used to determine an average
     CORE_COUNTS = [2,4]; %array of the numbers of cores used in parallel processing
+    CMAP = colour_map(max_iterations,5); %generate colour-map
     %variables for data
     numImages = length(image_sizes); %number of images to generate
     widths = zeros(numImages,1); %widths of the images
@@ -144,9 +87,10 @@ function run_analysis_() %[!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!]
     %determine time for serial implementation
     time_serial = zeros(numImages, ITERATIONS_AVG); %all execution times, which will be averaged
     for i = 1:numImages
+        mandelbrot_sequential(widths(i,1), heights(i,1), max_iterations, CMAP); %cold run
         for j = 1:ITERATIONS_AVG
             tic();
-            plots_serial{i,1} = mandelbrot_serial(widths(i,1), heights(i,1), max_iterations);
+            plots_serial{i,1} = mandelbrot_sequential(widths(i,1), heights(i,1), max_iterations, CMAP);
             time_serial(i,j) = toc();
         end
         mean_time_serial(i,1) = mean(time_serial(i,:)); %determine average execution time
@@ -168,17 +112,18 @@ function run_analysis_() %[!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!]
         end
         %measure time
         for i = 1:numImages
+            plot_parallel = mandelbrot_parallel(widths(i,1), heights(i,1), max_iterations, CMAP); %cold run
             time_parallel = zeros(ITERATIONS_AVG,1);
             for j = 1:ITERATIONS_AVG
                 tic();
-                plot_parallel = mandelbrot_parallel(widths(i,1), heights(i,1), max_iterations);
+                plot_parallel = mandelbrot_parallel(widths(i,1), heights(i,1), max_iterations, CMAP);
                 time_parallel(j,1) = toc();
                 %calculate speedup
                 speedup(i,j,cores) = time_serial(i,j)/time_parallel(j,1);
             end
             mean_time_parallel(cores,i) = mean2(time_parallel(:,1)); %determine average execution time
             %count differing pixels
-            diff_pixels(cores,i) = sum(xor(plots_serial{i,1}, plot_parallel), 'all'); %calculate error (number of different pixels)
+            diff_pixels(cores,i) = sum(any(plot_parallel~=plots_serial{i,1}, 3), "all"); %calculate error (number of different pixels)
             %save parallel plot as image
             filepath = strcat(parallel_images_dir, "/parallel_", labels{i},"_",int2str(CORE_COUNTS(cores)),".png"); %generate parallel filepath
             mandelbrot_plot(plot_parallel, filepath); %save parallel image
