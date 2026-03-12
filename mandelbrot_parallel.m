@@ -12,7 +12,6 @@
 %  PART 3: Parallel Mandelbrot Set Computation
 %  ========================================================================
 %
-%TODO: Implement parallel Mandelbrot set computation function
 function img = mandelbrot_parallel(cols, rows, max_iterations, cmap)
     % The area of the complex plane to calculate for.
     x_min = -2.0;

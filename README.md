@@ -1,15 +1,16 @@
 # EEE4120F Practical 2 Repository
 
-Compare built-in Octave/MATLAB image processing performance to a manually-implemented
-loop-based implementation.
-Compare a serial implementation of finding the Mandelbrot set, to a parallel implementation.
+Analyze the correctness, speed-up, and parallel efficiency of using MATLAB's
+`parfor` parallel execution model against the serial "golden standard" implementation
+of a simple embarassingly-parallel algorithm to check membership of the Mandelbrot
+set for samples taken in the complex plane.
 
 # To Run
 
-## With Octave (required `octave` and `octave-image` are pre-installed)
+## With MATLAB
 
-1. Change directory to the repo.
-2. `octave run_analysis`
+1. Open MATLAB with the repository directory open (GUI or CLI).
+2. `run_analysis`
 
 # Data
 
@@ -17,4 +18,9 @@ Compare a serial implementation of finding the Mandelbrot set, to a parallel imp
 An `analysis_results.csv` file will be generated after running.
 
 ## Visuals
-A plot... of something (to be decided).
+
+Resulting colour-mapped Mandelbrot set images are output to
+`serial_output_images` and `parallel_output_images` during execution of 
+`run_analysis`.
+
+Sppedup graphs will be plotted in MATLAB at the end of `run_analysis`.
