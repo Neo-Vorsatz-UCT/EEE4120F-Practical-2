@@ -46,7 +46,7 @@ end
 % Compare the performance of serial Mandelbrot set computation
 % with parallel Mandelbrot set computation.
 
-function run_analysis_() %[!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!]
+function run_analysis_()
     %Array conatining all the image sizes to be tested
     image_sizes = [
         [800,600],   %SVGA
@@ -66,7 +66,7 @@ function run_analysis_() %[!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!]
     global parallel_images_dir; %directory where the parallel images are saved
     global output_file; %file with all of the output data
     %constants
-    ITERATIONS_AVG = 10; %number of iterations used to determine an average
+    ITERATIONS_AVG = 5; %number of iterations used to determine an average
     CORE_COUNTS = [2,3,4,5,6]; %array of the numbers of cores used in parallel processing
     CMAP = colour_map(max_iterations,5); %generate colour-map
     %variables for data
@@ -153,8 +153,8 @@ function run_analysis_() %[!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!]
     fileID = fopen(output_file, "w");
     fprintf(fileID, "Image Size, Serial Time (s)");
     for cores = 1:length(CORE_COUNTS)
-        fprintf(fileID, ", Different Pixels [%d], Parallel Time [%d] (s), Speedup [%d]", ...
-            CORE_COUNTS(cores), CORE_COUNTS(cores), CORE_COUNTS(cores));
+        fprintf(fileID, ", Different Pixels [%d], Parallel Time [%d] (s), Speedup [%d], Efficiency [%d] (%%)", ...
+            CORE_COUNTS(cores), CORE_COUNTS(cores), CORE_COUNTS(cores), CORE_COUNTS(cores));
     end
     fprintf(fileID, "\n");
     %saving data to file
@@ -162,8 +162,10 @@ function run_analysis_() %[!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!]
         fprintf(fileID, "%s, %.5f", ...
             labels{i,1}, mean_time_serial(i,1));
         for cores = 1:length(CORE_COUNTS)
-            fprintf(fileID, ", %e, %.5f, %.5f", ...
-                diff_pixels(cores,i), mean_time_parallel(cores,i), mean2(speedup(i,:,cores)));
+            mean_speedup = mean2(speedup(i,:,cores));
+            efficiency = 100*mean_speedup/CORE_COUNTS(cores);
+            fprintf(fileID, ", %e, %.5f, %.5f, %.5f", ...
+                diff_pixels(cores,i), mean_time_parallel(cores,i), mean_speedup, efficiency);
         end
         fprintf(fileID, "\n");
     end
@@ -182,6 +184,20 @@ function run_analysis_() %[!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!]
         title(strcat("Mandelbrot Speedup vs. Image Size for ", int2str(CORE_COUNTS(cores)), " cores"));
         grid on;
     end
+    %plotting speedup versus number of cores
+    figure;
+    mean_speedup = squeeze(mean(speedup,2));
+    hold on
+    for i = 1:numImages
+        plot(CORE_COUNTS, mean_speedup(i,:), '-o', 'LineWidth', 2, 'MarkerSize', 8);
+    end
+    hold off
+    %axis labels and title
+    xlabel('Number of Cores');
+    ylabel('Speedup Ratio');
+    title('Mandelbrot Speedup vs. Number of Cores');
+    legend(labels);
+    grid on;
     %feedback
     disp("... plotted data");
 end
